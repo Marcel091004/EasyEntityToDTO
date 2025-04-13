@@ -4,7 +4,7 @@ package org.example;
 public class Main {
     public static void main(String[] args) {
 
-        ExampleEntity example = new ExampleEntity("Max Mustermann", 25, 100000.0);
+        ExampleEntity example = new ExampleEntity("John Doe", 25, 100000.0);
 
         DTOMapper<ExampleEntity> mapper = new DTOMapper<>();
 

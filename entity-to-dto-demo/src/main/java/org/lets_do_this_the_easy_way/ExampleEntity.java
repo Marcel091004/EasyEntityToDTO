@@ -16,8 +16,5 @@ public class ExampleEntity {
         this.salary = salary;
     }
 
-    //Empty Constructor is needed during new Object Generation
-    public ExampleEntity() {
-    }
 
 }

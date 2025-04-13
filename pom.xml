@@ -8,8 +8,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>annotations</module>
-        <module>demo</module>
+        <module>entity-to-dto-core</module>
+        <module>entity-to-dto-demo</module>
     </modules>
 
     <properties>

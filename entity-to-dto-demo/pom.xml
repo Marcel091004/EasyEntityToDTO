@@ -6,12 +6,12 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>demo</artifactId>
+    <artifactId>entity-to-dto-demo</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>org.lets_do_this_the_easy_way</groupId>
-            <artifactId>annotations</artifactId>
+            <artifactId>entity-to-dto-core</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>

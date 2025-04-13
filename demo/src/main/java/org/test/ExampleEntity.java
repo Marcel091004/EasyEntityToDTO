@@ -1,8 +1,5 @@
-package org.example;
+package org.test;
 
-
-import org.test.ExcludeFromDTOMapper;
-import org.test.ToDTO;
 
 @ToDTO
 public class ExampleEntity {

@@ -3,9 +3,7 @@ package org.test.codeGeneration;
 import com.google.auto.service.AutoService;
 import org.test.ExcludeFromDTOMapper;
 
-import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.Processor;
-import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
@@ -14,23 +12,26 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Set;
 
+
+@SupportedSourceVersion(SourceVersion.RELEASE_21)
+@SupportedAnnotationTypes("org.test.ToDTO")
 @AutoService(Processor.class)
 public class DTOProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        annotations.forEach(annotation -> {
-            roundEnv.getElementsAnnotatedWith(annotation).forEach(this::generateDTOFile);
-        });
-
-
+        annotations.forEach(annotation ->
+                roundEnv
+                        .getElementsAnnotatedWith(annotation)
+                        .forEach(this::generateDTOFile)
+        );
         return true;
     }
 
     private void generateDTOFile(Element element) {
 
         String className = element.getSimpleName().toString();
-        String packageName = element.getEnclosingElement().toString();
+        String packageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
         String fileName = className + "DTO";
         String filePackageName = packageName + "." + fileName;
 
@@ -50,14 +51,4 @@ public class DTOProcessor extends AbstractProcessor {
         }
     }
 
-
-    @Override
-    public Set<String> getSupportedAnnotationTypes() {
-        return Set.of("org.example.annotations.ToDTO");
-    }
-
-    @Override
-    public SourceVersion getSupportedSourceVersion() {
-        return SourceVersion.RELEASE_21;
-    }
 }

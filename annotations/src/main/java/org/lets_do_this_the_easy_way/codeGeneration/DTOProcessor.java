@@ -1,7 +1,7 @@
-package org.test.codeGeneration;
+package org.lets_do_this_the_easy_way.codeGeneration;
 
 import com.google.auto.service.AutoService;
-import org.test.ExcludeFromDTOMapper;
+import org.lets_do_this_the_easy_way.ExcludeFromDTOMapper;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -14,7 +14,7 @@ import java.util.Set;
 
 
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
-@SupportedAnnotationTypes("org.test.ToDTO")
+@SupportedAnnotationTypes("org.lets_do_this_the_easy_way.ToDTO")
 @AutoService(Processor.class)
 public class DTOProcessor extends AbstractProcessor {
 
@@ -36,15 +36,19 @@ public class DTOProcessor extends AbstractProcessor {
         String filePackageName = packageName + "." + fileName;
 
         List<? extends Element> fields = element.getEnclosedElements().stream()
-                .filter(e -> e.getKind().isField()) // only keep fields
+                .filter(e -> e.getKind().isField())
                 .filter(e -> e.getAnnotation(ExcludeFromDTOMapper.class) == null)
                 .toList();
 
         try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(filePackageName).openWriter())) {
-            writer.println("package " + filePackageName + ";");
-            writer.println();
-            writer.println("public class " + fileName + " {");
+            writer.println("""
+                    package %s;
+                    
+                    public class %s {
+                    """.formatted(packageName, fileName));
+
             writer.println("}");
+
 
         } catch (IOException e) {
             throw new RuntimeException("Error creating new Java File for " + className + "." + e);

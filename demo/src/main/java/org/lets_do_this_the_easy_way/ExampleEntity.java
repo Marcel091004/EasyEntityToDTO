@@ -1,4 +1,4 @@
-package org.test;
+package org.lets_do_this_the_easy_way;
 
 
 @ToDTO

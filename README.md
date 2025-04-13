@@ -19,6 +19,7 @@ Using [JitPack](https://jitpack.io):
     <artifactId>EasyEntityToDTO</artifactId>
     <version>v1.0.0</version>
 </dependency>
+```
 
 ## 🚀 Quick Start Example
 
@@ -56,8 +57,7 @@ ExampleUserDTO dto = ExampleUserDTOMapper.mapToExampleUserDTO(john);
 System.out.println(dto.getUsername()); // → John Doe
 System.out.println(dto.getAge());      // → 25
 
-
----
+```
 
 💎 Why Use This?
 

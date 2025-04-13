@@ -26,6 +26,7 @@ Using [JitPack](https://jitpack.io):
 Here's how you can eliminate boilerplate and generate a DTO in seconds:
 
 ### ✍️ Step 1: Annotate your entity
+```java
 
 @ToDTO // 👈 Automatically generates a DTO and Mapper
 public class ExampleUser {
@@ -46,6 +47,7 @@ public class ExampleUser {
     public String getUsername() { return username; }
     public int getAge() { return age; }
 }
+```
 
 ### 🔁 Step 2: Use the generated Mapper
 

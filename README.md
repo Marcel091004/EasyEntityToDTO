@@ -1,15 +1,21 @@
 # EasyEntityToDTO
-A small library to easily map Entitys to DTOs for your API
 
+A lightweight annotation processor to automatically generate DTOs and DTO mappers from your Java entities with zero boilerplate.
+
+## 🔧 Installation
+
+Using [JitPack](https://jitpack.io):
+
+```xml
 <repositories>
-  <repository>
-    <id>jitpack.io</id>
-    <url>https://jitpack.io</url>
-  </repository>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
 </repositories>
 
 <dependency>
-  <groupId>com.github.Marcel091004</groupId>
-  <artifactId>EasyEntityToDTO</artifactId>
-  <version>v1.0.0</version>
+    <groupId>com.github.YOUR_USERNAME</groupId>
+    <artifactId>YOUR_MODULE_NAME</artifactId>
+    <version>TAG_OR_COMMIT</version>
 </dependency>

@@ -15,7 +15,7 @@ Using [JitPack](https://jitpack.io):
 </repositories>
 
 <dependency>
-    <groupId>com.github.YOUR_USERNAME</groupId>
-    <artifactId>YOUR_MODULE_NAME</artifactId>
-    <version>TAG_OR_COMMIT</version>
+    <groupId>com.github.Marcel091004</groupId>
+    <artifactId>Marcel091004</artifactId>
+    <version>v1.0.0</version>
 </dependency>

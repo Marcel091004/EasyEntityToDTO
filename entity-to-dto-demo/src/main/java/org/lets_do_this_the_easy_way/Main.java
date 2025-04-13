@@ -6,6 +6,9 @@ public class Main {
 
         ExampleUser John = new ExampleUser("John Doe", 25, "very secure password");
 
-        ExampleUserDTO JohnDTO = new ExampleUserDTO();
+        ExampleUserDTO JohnDTO = ExampleUserDTOMapper.mapToExampleUserDTO(John);
+
+        System.out.println(JohnDTO.getUsername());
+        System.out.println(JohnDTO.getAge());
     }
 }

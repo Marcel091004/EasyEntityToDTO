@@ -34,7 +34,6 @@ public class DTOProcessor extends AbstractProcessor {
         String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
         String fileName = oldClassName + "DTO";
         String filePackageName = oldPackageName + "." + fileName;
-        String capitalizedFieldName = Character.toUpperCase(oldClassName.charAt(0)) + oldClassName.substring(1);
 
         List<? extends Element> fields = element.getEnclosedElements().stream()
                 .filter(e -> e.getKind().isField())
@@ -50,32 +49,30 @@ public class DTOProcessor extends AbstractProcessor {
                     public class %s {
                     """.formatted(oldPackageName, fileName));
 
-            fields.forEach(field -> {
-                writer.println("""
-                                 private %s %s;
-                                
-                                 public %s get%s() {
-                                   return this.%s;
-                                 }
-                                
-                                 public void set%s(%s %s) {
-                                    this.%s = %s;
-                                 }
-                                """.formatted(
-                                field.asType(),
-                                field.getSimpleName(),
-                                field.asType(),
-                                field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1),
-                                field.getSimpleName(),
-                                field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1),
-                                field.asType(),
-                                field.getSimpleName().toString().toLowerCase(),
-                                field.getSimpleName(),
-                                field.getSimpleName().toString().toLowerCase()
+            fields.forEach(field -> writer.println("""
+                             private %s %s;
+                            
+                             public %s get%s() {
+                               return this.%s;
+                             }
+                            
+                             public void set%s(%s %s) {
+                                this.%s = %s;
+                             }
+                            """.formatted(
+                            field.asType(),
+                            field.getSimpleName(),
+                            field.asType(),
+                            field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1),
+                            field.getSimpleName(),
+                            field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1),
+                            field.asType(),
+                            field.getSimpleName().toString().toLowerCase(),
+                            field.getSimpleName(),
+                            field.getSimpleName().toString().toLowerCase()
 
-                        )
-                );
-            });
+                    )
+            ));
 
             writer.println("}");
 
@@ -104,10 +101,8 @@ public class DTOProcessor extends AbstractProcessor {
             writer.printf("package %s;%n%n", oldPackageName);
             writer.printf("public class %s {%n%n", fileName);
 
-            writer.printf("    %s %s = new %s();%n%n", dtoClassName, targetVarName, dtoClassName);
-
-            writer.printf("    public %s mapTo%s(%s %s) {%n", dtoClassName, dtoClassName, oldClassName, sourceVarName);
-
+            writer.printf("    public static %s mapTo%s(%s %s) {%n", dtoClassName, dtoClassName, oldClassName, sourceVarName);
+            writer.printf("        %s %s = new %s();%n%n", dtoClassName, targetVarName, dtoClassName);
             // Generate setter lines for each field
             for (Element field : fields) {
                 String fieldName = field.getSimpleName().toString().toLowerCase();

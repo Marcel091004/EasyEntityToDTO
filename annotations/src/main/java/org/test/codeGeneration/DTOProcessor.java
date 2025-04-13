@@ -1,7 +1,7 @@
-package org.example.codeGeneration;
+package org.test.codeGeneration;
 
 import com.google.auto.service.AutoService;
-import org.example.annotations.ExcludeFromDTOMapper;
+import org.test.ExcludeFromDTOMapper;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Processor;
@@ -24,7 +24,7 @@ public class DTOProcessor extends AbstractProcessor {
         });
 
 
-        return false;
+        return true;
     }
 
     private void generateDTOFile(Element element) {
@@ -43,9 +43,10 @@ public class DTOProcessor extends AbstractProcessor {
             writer.println("package " + filePackageName + ";");
             writer.println();
             writer.println("public class " + fileName + " {");
+            writer.println("}");
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error creating new Java File for " + className + "." + e);
         }
     }
 

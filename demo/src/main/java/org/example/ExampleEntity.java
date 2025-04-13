@@ -1,7 +1,10 @@
 package org.example;
 
-import org.example.annotations.ExcludeFromDTOMapper;
 
+import org.test.ExcludeFromDTOMapper;
+import org.test.ToDTO;
+
+@ToDTO
 public class ExampleEntity {
 
     public String name;

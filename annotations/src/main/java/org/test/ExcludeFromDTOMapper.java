@@ -1,4 +1,4 @@
-package org.example.annotations;
+package org.test;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

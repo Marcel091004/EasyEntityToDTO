@@ -1,5 +1,7 @@
 package org.example;
 
+import org.example.annotations.ExcludeFromDTOMapper;
+
 public class ExampleEntity {
 
     public String name;

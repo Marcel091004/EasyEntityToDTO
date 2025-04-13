@@ -34,6 +34,7 @@ public class DTOProcessor extends AbstractProcessor {
         String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
         String fileName = oldClassName + "DTO";
         String filePackageName = oldPackageName + "." + fileName;
+        String capitalizedFieldName = Character.toUpperCase(oldClassName.charAt(0)) + oldClassName.substring(1);
 
         List<? extends Element> fields = element.getEnclosedElements().stream()
                 .filter(e -> e.getKind().isField())
@@ -41,6 +42,8 @@ public class DTOProcessor extends AbstractProcessor {
                 .toList();
 
         try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(filePackageName).openWriter())) {
+
+
             writer.println("""
                     package %s;
                     
@@ -62,9 +65,9 @@ public class DTOProcessor extends AbstractProcessor {
                                 field.asType(),
                                 field.getSimpleName(),
                                 field.asType(),
+                                field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1),
                                 field.getSimpleName(),
-                                field.getSimpleName(),
-                                field.getSimpleName(),
+                                field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1),
                                 field.asType(),
                                 field.getSimpleName().toString().toLowerCase(),
                                 field.getSimpleName(),
@@ -108,7 +111,8 @@ public class DTOProcessor extends AbstractProcessor {
             // Generate setter lines for each field
             for (Element field : fields) {
                 String fieldName = field.getSimpleName().toString().toLowerCase();
-                writer.printf("        %s.set%s(%s.get%s());%n", targetVarName, fieldName, sourceVarName, fieldName);
+                String capitalized = Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+                writer.printf("        %s.set%s(%s.get%s());%n", targetVarName, capitalized, sourceVarName, capitalized);
             }
 
             writer.printf("        return %s;%n", targetVarName);

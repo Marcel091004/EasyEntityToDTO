@@ -4,8 +4,8 @@ package org.lets_do_this_the_easy_way;
 public class Main {
     public static void main(String[] args) {
 
-        ExampleEntity example = new ExampleEntity("John Doe", 25, 100000.0);
+        ExampleUser John = new ExampleUser("John Doe", 25, "very secure password");
 
-        ExampleEntityDTO exampleEntityDTO = new ExampleEntityDTO();
+        ExampleUserDTO JohnDTO = new ExampleUserDTO();
     }
 }

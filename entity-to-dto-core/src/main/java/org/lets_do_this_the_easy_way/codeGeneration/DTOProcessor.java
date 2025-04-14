@@ -95,22 +95,30 @@ public class DTOProcessor extends AbstractProcessor {
                 .toList();
 
         try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(oldPackageName + "." + fileName).openWriter())) {
-            String sourceVarName = oldClassName.toLowerCase();
-            String targetVarName = dtoClassName.toLowerCase();
 
             writer.printf("package %s;%n%n", oldPackageName);
+            writer.printf("import java.lang.reflect.Field;%n%n");
             writer.printf("public class %s {%n%n", fileName);
 
-            writer.printf("    public static %s mapTo%s(%s %s) {%n", dtoClassName, dtoClassName, oldClassName, sourceVarName);
-            writer.printf("        %s %s = new %s();%n%n", dtoClassName, targetVarName, dtoClassName);
-            // Generate setter lines for each field
-            for (Element field : fields) {
-                String fieldName = field.getSimpleName().toString().toLowerCase();
-                String capitalized = Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
-                writer.printf("        %s.set%s(%s.get%s());%n", targetVarName, capitalized, sourceVarName, capitalized);
-            }
+            writer.printf("    public static %s mapTo%s(%s %s) {%n", dtoClassName, dtoClassName, oldClassName, oldClassName);
+            writer.printf("        %s dto = new %s();%n%n", dtoClassName, dtoClassName);
 
-            writer.printf("        return %s;%n", targetVarName);
+            writer.printf(" try {");
+            for (Element field : fields) {
+
+                writer.printf(" Field %sfield = %s.class.getDeclaredField(\"%s\");%n", field.getSimpleName(), oldClassName, field.getSimpleName());
+                writer.printf(" %sfield.setAccessible(true);%n", field.getSimpleName());
+                writer.printf("Object %s = %sfield.get(%s);%n", field.getSimpleName() + "Value", field.getSimpleName(), oldClassName);
+                writer.printf(" Field %sDTO = %s.class.getDeclaredField(\"%s\");%n", field.getSimpleName(), dtoClassName, field.getSimpleName());
+                writer.printf(" %s.setAccessible(true);%n", field.getSimpleName() + "DTO");
+                writer.printf("%s.set(dto, %s);%n%n", field.getSimpleName() + "DTO", field.getSimpleName() + "Value");
+
+            }
+            writer.printf(" } catch(NoSuchFieldException | IllegalAccessException e) {%n");
+            writer.printf("throw new RuntimeException(\"cant access field " + oldClassName + "\"" + " + e);%n");
+            writer.printf(" }%n");
+
+            writer.printf("        return dto;%n");
             writer.println("    }");
             writer.println("}");
         } catch (IOException e) {

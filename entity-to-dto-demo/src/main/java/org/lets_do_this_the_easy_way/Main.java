@@ -1,6 +1,10 @@
 package org.lets_do_this_the_easy_way;
 
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class Main {
     public static void main(String[] args) {
 
@@ -10,5 +14,30 @@ public class Main {
 
         System.out.println(JohnDTO.getUsername());
         System.out.println(JohnDTO.getAge());
+
+
+        ExampleUser user1 = new ExampleUser("alice", 30, "secret123");
+        ExampleUser user2 = new ExampleUser("bob", 25, "hunter2");
+
+        List<ExampleUser> usersList = new ArrayList<>();
+        usersList.add(user1);
+        usersList.add(user2);
+
+        List<ExampleUserDTO> dtosList = ExampleUserDTOMapper.mapToExampleUserDTO(usersList);
+
+        dtosList.forEach(dto -> System.out.println("Username: " + dto.getUsername() + ", Age: " + dto.getAge()));
+
+
+
+        ExampleUser[] usersArray = {
+                new ExampleUser("John", 30, "secret123"),
+                new ExampleUser("JOHN CENA", 25, "hunter2")
+        };
+
+        ExampleUserDTO[] dtosArray = ExampleUserDTOMapper.mapToExampleUserDTO(usersArray);
+
+        Arrays.stream(dtosArray).forEach(dto ->
+                System.out.println("Username: " + dto.getUsername() + ", Age: " + dto.getAge())
+        );
     }
 }

@@ -1,7 +1,7 @@
 package org.lets_do_this_the_easy_way.codeGeneration;
 
 import com.google.auto.service.AutoService;
-import org.lets_do_this_the_easy_way.ExcludeFromDTO;
+import org.lets_do_this_the_easy_way.annotations.ExcludeFromDTO;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -14,7 +14,7 @@ import java.util.Set;
 
 
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
-@SupportedAnnotationTypes("org.lets_do_this_the_easy_way.ToDTO")
+@SupportedAnnotationTypes("org.lets_do_this_the_easy_way.annotations.ToDTO")
 @AutoService(Processor.class)
 public class DTOProcessor extends AbstractProcessor {
 
@@ -100,6 +100,8 @@ public class DTOProcessor extends AbstractProcessor {
             // Package and imports
             writer.printf("package %s;%n%n", oldPackageName);
             writer.println("import java.lang.reflect.Field;");
+            writer.println("import java.util.List;");
+            writer.println("import java.util.ArrayList;");
             writer.println();
 
             // Class declaration
@@ -131,12 +133,71 @@ public class DTOProcessor extends AbstractProcessor {
             writer.println();
             writer.println("        return dto;");
             writer.println("    }");
+
+            //Next mapper
+            writer.printf("    public static List<%s> mapTo%s(List<%s> %sList) {%n", dtoClassName, dtoClassName, oldClassName, oldClassName);
+            writer.printf("        List<%s> dtoList =  new ArrayList<>();%n%n", dtoClassName);
+            writer.printf("        %sList.forEach(entity ->{%n%n", oldClassName);
+            writer.println("        try {");
+            writer.printf("             %s dto = new %s();%n", dtoClassName, dtoClassName);
+            writer.println();
+
+            // Field reflection logic
+            for (Element field : fields) {
+                String fieldName = field.getSimpleName().toString();
+
+                writer.printf("            Field %sfield = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
+                writer.printf("            %sfield.setAccessible(true);%n", fieldName);
+                writer.printf("            Object %sValue = %sfield.get(entity);%n%n", fieldName, fieldName);
+
+                writer.printf("            Field %sDTO = %s.class.getDeclaredField(\"%s\");%n", fieldName, dtoClassName, fieldName);
+                writer.printf("            %sDTO.setAccessible(true);%n", fieldName);
+                writer.printf("            %sDTO.set(dto, %sValue);%n%n", fieldName, fieldName);
+            }
+            writer.println("            dtoList.add(dto);");
+
+            // Catch block and return
+            writer.println("             } catch (NoSuchFieldException | IllegalAccessException e) {");
+            writer.printf("                throw new RuntimeException(\"cant access fields from %s\" + e);%n", oldClassName);
+            writer.println("            }");
+            writer.println("        });");
+            writer.println("        return dtoList;");
+            writer.println("    }\n");
+
+            //Next mapper
+            writer.printf("    public static %s[] mapTo%s(%s[] %sArray) {%n", dtoClassName, dtoClassName, oldClassName, oldClassName);
+            writer.printf("        %s[] dtoArray = new %s[%sArray.length];%n", dtoClassName, dtoClassName, oldClassName);
+            writer.printf("       for(int i = 0; i < dtoArray.length; i++) {%n%n");
+            writer.println("        try {");
+            writer.printf("             %s dto = new %s();%n", dtoClassName, dtoClassName);
+            writer.println();
+
+            // Field reflection logic
+            for (Element field : fields) {
+                String fieldName = field.getSimpleName().toString();
+
+                writer.printf("            Field %sfield = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
+                writer.printf("            %sfield.setAccessible(true);%n", fieldName);
+                writer.printf("            Object %sValue = %sfield.get(%sArray[i]);%n%n", fieldName, fieldName, oldClassName);
+
+                writer.printf("            Field %sDTO = %s.class.getDeclaredField(\"%s\");%n", fieldName, dtoClassName, fieldName);
+                writer.printf("            %sDTO.setAccessible(true);%n", fieldName);
+                writer.printf("            %sDTO.set(dto, %sValue);%n%n", fieldName, fieldName);
+            }
+            writer.println("            dtoArray[i] = dto;");
+
+            // Catch block and return
+            writer.println("             } catch (NoSuchFieldException | IllegalAccessException e) {");
+            writer.printf("                throw new RuntimeException(\"cant access fields from %s\" + e);%n", oldClassName);
+            writer.println("            }");
+            writer.println("        }");
+            writer.println("        return dtoArray;");
+            writer.println("    }");
             writer.println("}");
 
         } catch (IOException e) {
             throw new RuntimeException("Error creating new Java File for " + oldClassName + ": " + e);
         }
     }
-
 
 }

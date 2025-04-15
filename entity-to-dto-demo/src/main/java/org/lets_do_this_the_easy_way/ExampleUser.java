@@ -18,4 +18,7 @@ public class ExampleUser {
         this.age = age;
         this.password = password;
     }
+
+    public ExampleUser() {
+    }
 }

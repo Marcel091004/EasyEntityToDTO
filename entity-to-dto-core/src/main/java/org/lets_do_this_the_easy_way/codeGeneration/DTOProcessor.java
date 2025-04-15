@@ -20,11 +20,7 @@ public class DTOProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        annotations.forEach(annotation ->
-                roundEnv
-                        .getElementsAnnotatedWith(annotation)
-                        .forEach(this::generateDTOFile)
-        );
+        annotations.forEach(annotation -> roundEnv.getElementsAnnotatedWith(annotation).forEach(this::generateDTOFile));
         return true;
     }
 
@@ -35,10 +31,7 @@ public class DTOProcessor extends AbstractProcessor {
         String fileName = oldClassName + "DTO";
         String filePackageName = oldPackageName + "." + fileName;
 
-        List<? extends Element> fields = element.getEnclosedElements().stream()
-                .filter(e -> e.getKind().isField())
-                .filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null)
-                .toList();
+        List<? extends Element> fields = element.getEnclosedElements().stream().filter(e -> e.getKind().isField()).filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null).toList();
 
         try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(filePackageName).openWriter())) {
 
@@ -50,29 +43,18 @@ public class DTOProcessor extends AbstractProcessor {
                     """.formatted(oldPackageName, fileName));
 
             fields.forEach(field -> writer.println("""
-                             private %s %s;
-                            
-                             public %s get%s() {
-                               return this.%s;
-                             }
-                            
-                             public void set%s(%s %s) {
-                                this.%s = %s;
-                             }
-                            """.formatted(
-                            field.asType(),
-                            field.getSimpleName(),
-                            field.asType(),
-                            field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1),
-                            field.getSimpleName(),
-                            field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1),
-                            field.asType(),
-                            field.getSimpleName().toString().toLowerCase(),
-                            field.getSimpleName(),
-                            field.getSimpleName().toString().toLowerCase()
+                     private %s %s;
+                    
+                     public %s get%s() {
+                       return this.%s;
+                     }
+                    
+                     public void set%s(%s %s) {
+                        this.%s = %s;
+                     }
+                    """.formatted(field.asType(), field.getSimpleName(), field.asType(), field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1), field.getSimpleName(), field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1), field.asType(), field.getSimpleName().toString().toLowerCase(), field.getSimpleName(), field.getSimpleName().toString().toLowerCase()
 
-                    )
-            ));
+            )));
 
             writer.println("}");
 
@@ -88,14 +70,9 @@ public class DTOProcessor extends AbstractProcessor {
         String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
         String fileName = oldClassName + "DTOMapper";
 
-        List<? extends Element> fields = element.getEnclosedElements().stream()
-                .filter(e -> e.getKind().isField())
-                .filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null)
-                .toList();
+        List<? extends Element> fields = element.getEnclosedElements().stream().filter(e -> e.getKind().isField()).filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null).toList();
 
-        try (PrintWriter writer = new PrintWriter(processingEnv.getFiler()
-                .createSourceFile(oldPackageName + "." + fileName)
-                .openWriter())) {
+        try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(oldPackageName + "." + fileName).openWriter())) {
 
             // Package and imports
             writer.printf("package %s;%n%n", oldPackageName);
@@ -193,6 +170,90 @@ public class DTOProcessor extends AbstractProcessor {
             writer.println("        }");
             writer.println("        return dtoArray;");
             writer.println("    }");
+
+            // Reverse mapper: DTO to Entity (Single Object)
+            writer.printf("    public static %s mapTo%s(%s dto) {%n", oldClassName, oldClassName, dtoClassName);
+            writer.printf("        //Every Entity has to have a default constructor%n");
+            writer.printf("        %s entity = new %s();%n%n", oldClassName, oldClassName);
+            writer.println("        try {");
+            writer.println();
+
+            for (Element field : fields) {
+                String fieldName = field.getSimpleName().toString();
+
+                writer.printf("            Field %sField = %s.class.getDeclaredField(\"%s\");%n", fieldName, dtoClassName, fieldName);
+                writer.printf("            %sField.setAccessible(true);%n", fieldName);
+                writer.printf("            Object %sValue = %sField.get(dto);%n%n", fieldName, fieldName);
+
+                writer.printf("            Field %sEntityField = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
+                writer.printf("            %sEntityField.setAccessible(true);%n", fieldName);
+                writer.printf("            %sEntityField.set(entity, %sValue);%n%n", fieldName, fieldName);
+            }
+
+            writer.println("        } catch (NoSuchFieldException | IllegalAccessException e) {");
+            writer.printf("            throw new RuntimeException(\"cant access fields from %s\" + e);%n", dtoClassName);
+            writer.println("        }");
+            writer.println();
+            writer.println("        return entity;");
+            writer.println("    }\n");
+
+            // Reverse mapper: DTO List to Entity List
+            writer.printf("    public static List<%s> mapTo%s(List<%s> dtoList) {%n", oldClassName, oldClassName, dtoClassName);
+            writer.printf("        List<%s> entityList = new ArrayList<>();%n%n", oldClassName);
+            writer.println("        dtoList.forEach(dto -> {");
+            writer.println("            try {");
+            writer.printf("                //Every Entity has to have a default constructor%n");
+            writer.printf("                %s entity = new %s();%n", oldClassName, oldClassName);
+            writer.println();
+
+            for (Element field : fields) {
+                String fieldName = field.getSimpleName().toString();
+
+                writer.printf("                Field %sField = %s.class.getDeclaredField(\"%s\");%n", fieldName, dtoClassName, fieldName);
+                writer.printf("                %sField.setAccessible(true);%n", fieldName);
+                writer.printf("                Object %sValue = %sField.get(dto);%n%n", fieldName, fieldName);
+
+                writer.printf("                Field %sEntityField = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
+                writer.printf("                %sEntityField.setAccessible(true);%n", fieldName);
+                writer.printf("                %sEntityField.set(entity, %sValue);%n%n", fieldName, fieldName);
+            }
+
+            writer.println("                entityList.add(entity);");
+            writer.println("            } catch (NoSuchFieldException | IllegalAccessException e) {");
+            writer.printf("                throw new RuntimeException(\"cant access fields from %s\" + e);%n", dtoClassName);
+            writer.println("            }");
+            writer.println("        });");
+            writer.println("        return entityList;");
+            writer.println("    }\n");
+
+            // Reverse mapper: DTO Array to Entity Array
+            writer.printf("    public static %s[] mapTo%s(%s[] dtoArray) {%n", oldClassName, oldClassName, dtoClassName);
+            writer.printf("        %s[] entityArray = new %s[dtoArray.length];%n", oldClassName, oldClassName);
+            writer.println("        for (int i = 0; i < dtoArray.length; i++) {");
+            writer.println("            try {");
+            writer.printf("                //Every Entity has to have a default constructor%n");
+            writer.printf("                %s entity = new %s();%n", oldClassName, oldClassName);
+            writer.println();
+
+            for (Element field : fields) {
+                String fieldName = field.getSimpleName().toString();
+
+                writer.printf("                Field %sField = %s.class.getDeclaredField(\"%s\");%n", fieldName, dtoClassName, fieldName);
+                writer.printf("                %sField.setAccessible(true);%n", fieldName);
+                writer.printf("                Object %sValue = %sField.get(dtoArray[i]);%n%n", fieldName, fieldName);
+
+                writer.printf("                Field %sEntityField = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
+                writer.printf("                %sEntityField.setAccessible(true);%n", fieldName);
+                writer.printf("                %sEntityField.set(entity, %sValue);%n%n", fieldName, fieldName);
+            }
+
+            writer.println("                entityArray[i] = entity;");
+            writer.println("            } catch (NoSuchFieldException | IllegalAccessException e) {");
+            writer.printf("                throw new RuntimeException(\"cant access fields from %s\" + e);%n", dtoClassName);
+            writer.println("            }");
+            writer.println("        }");
+            writer.println("        return entityArray;");
+            writer.println("    }\n");
             writer.println("}");
 
         } catch (IOException e) {

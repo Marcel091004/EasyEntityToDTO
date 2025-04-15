@@ -8,6 +8,7 @@ import org.lets_do_this_the_easy_way.annotations.ToDTO;
 @ToDTO
 public class ExampleUser {
 
+    @DTOName(name = "Username")
     private String username;
 
     @DTOName(name = "age_in_years")

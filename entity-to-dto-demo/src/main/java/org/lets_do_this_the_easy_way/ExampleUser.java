@@ -1,6 +1,7 @@
 package org.lets_do_this_the_easy_way;
 
 
+import org.lets_do_this_the_easy_way.annotations.DTOName;
 import org.lets_do_this_the_easy_way.annotations.ExcludeFromDTO;
 import org.lets_do_this_the_easy_way.annotations.ToDTO;
 
@@ -8,6 +9,8 @@ import org.lets_do_this_the_easy_way.annotations.ToDTO;
 public class ExampleUser {
 
     private String username;
+
+    @DTOName(name = "age_in_years")
     private int age;
 
     @ExcludeFromDTO

@@ -1,6 +1,7 @@
 package org.lets_do_this_the_easy_way.codeGeneration;
 
 import com.google.auto.service.AutoService;
+import org.lets_do_this_the_easy_way.annotations.DTOName;
 import org.lets_do_this_the_easy_way.annotations.ExcludeFromDTO;
 
 import javax.annotation.processing.*;
@@ -31,7 +32,12 @@ public class DTOProcessor extends AbstractProcessor {
         String fileName = oldClassName + "DTO";
         String filePackageName = oldPackageName + "." + fileName;
 
-        List<? extends Element> fields = element.getEnclosedElements().stream().filter(e -> e.getKind().isField()).filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null).toList();
+        List<? extends Element> fields = element
+                .getEnclosedElements()
+                .stream()
+                .filter(e -> e.getKind().isField())
+                .filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null)
+                .toList();
 
         try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(filePackageName).openWriter())) {
 
@@ -42,20 +48,29 @@ public class DTOProcessor extends AbstractProcessor {
                     public class %s {
                     """.formatted(oldPackageName, fileName));
 
-            fields.forEach(field -> writer.println("""
-                     private %s %s;
-                    
-                     public %s get%s() {
-                       return this.%s;
-                     }
-                    
-                     public void set%s(%s %s) {
-                        this.%s = %s;
-                     }
-                    """.formatted(field.asType(), field.getSimpleName(), field.asType(), field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1), field.getSimpleName(), field.getSimpleName().toString().substring(0, 1).toUpperCase() + field.getSimpleName().toString().substring(1), field.asType(), field.getSimpleName().toString().toLowerCase(), field.getSimpleName(), field.getSimpleName().toString().toLowerCase()
+            fields.forEach(field -> {
 
-            )));
+                String fieldName = field.getSimpleName().toString();
 
+                if (field.getAnnotation(DTOName.class) != null) {
+                    DTOName dtoName = field.getAnnotation(DTOName.class);
+                    fieldName = dtoName.name();
+                }
+
+                writer.println("""
+                         private %s %s;
+                        
+                         public %s get%s() {
+                           return this.%s;
+                         }
+                        
+                         public void set%s(%s %s) {
+                            this.%s = %s;
+                         }
+                        """.formatted(field.asType(), fieldName, field.asType(), fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1), fieldName, fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1), field.asType(), fieldName.toLowerCase(), fieldName, fieldName.toLowerCase()
+
+                ));
+            });
             writer.println("}");
 
             generateDTOMapper(element, fileName);
@@ -122,6 +137,11 @@ public class DTOProcessor extends AbstractProcessor {
             // Field reflection logic
             for (Element field : fields) {
                 String fieldName = field.getSimpleName().toString();
+
+                if (element.getAnnotation(DTOName.class) != null) {
+                    DTOName dtoName = element.getAnnotation(DTOName.class);
+                    fieldName = dtoName.name();
+                }
 
                 writer.printf("            Field %sfield = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
                 writer.printf("            %sfield.setAccessible(true);%n", fieldName);

@@ -13,7 +13,7 @@ public class Main {
         ExampleUserDTO JohnDTO = ExampleUserDTOMapper.mapToExampleUserDTO(John);
 
         System.out.println(JohnDTO.getUsername());
-        System.out.println(JohnDTO.getAge());
+        System.out.println(JohnDTO.getAge_in_years());
 
 
         ExampleUser user1 = new ExampleUser("alice", 30, "secret123");
@@ -25,7 +25,7 @@ public class Main {
 
         List<ExampleUserDTO> dtosList = ExampleUserDTOMapper.mapToExampleUserDTO(usersList);
 
-        dtosList.forEach(dto -> System.out.println("Username: " + dto.getUsername() + ", Age: " + dto.getAge()));
+        dtosList.forEach(dto -> System.out.println("Username: " + dto.getUsername() + ", Age: " + dto.getAge_in_years()));
 
 
 
@@ -37,7 +37,7 @@ public class Main {
         ExampleUserDTO[] dtosArray = ExampleUserDTOMapper.mapToExampleUserDTO(usersArray);
 
         Arrays.stream(dtosArray).forEach(dto ->
-                System.out.println("Username: " + dto.getUsername() + ", Age: " + dto.getAge())
+                System.out.println("Username: " + dto.getUsername() + ", Age: " + dto.getAge_in_years())
         );
     }
 }

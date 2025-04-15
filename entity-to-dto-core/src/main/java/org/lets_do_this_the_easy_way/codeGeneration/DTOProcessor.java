@@ -84,7 +84,6 @@ public class DTOProcessor extends AbstractProcessor {
     }
 
     private void generateDTOMapper(Element element, String dtoClassName) {
-
         String oldClassName = element.getSimpleName().toString();
         String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
         String fileName = oldClassName + "DTOMapper";
@@ -94,36 +93,50 @@ public class DTOProcessor extends AbstractProcessor {
                 .filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null)
                 .toList();
 
-        try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(oldPackageName + "." + fileName).openWriter())) {
+        try (PrintWriter writer = new PrintWriter(processingEnv.getFiler()
+                .createSourceFile(oldPackageName + "." + fileName)
+                .openWriter())) {
 
+            // Package and imports
             writer.printf("package %s;%n%n", oldPackageName);
-            writer.printf("import java.lang.reflect.Field;%n%n");
+            writer.println("import java.lang.reflect.Field;");
+            writer.println();
+
+            // Class declaration
             writer.printf("public class %s {%n%n", fileName);
 
+            // Method signature
             writer.printf("    public static %s mapTo%s(%s %s) {%n", dtoClassName, dtoClassName, oldClassName, oldClassName);
             writer.printf("        %s dto = new %s();%n%n", dtoClassName, dtoClassName);
+            writer.println("        try {");
+            writer.println();
 
-            writer.printf(" try {");
+            // Field reflection logic
             for (Element field : fields) {
+                String fieldName = field.getSimpleName().toString();
 
-                writer.printf(" Field %sfield = %s.class.getDeclaredField(\"%s\");%n", field.getSimpleName(), oldClassName, field.getSimpleName());
-                writer.printf(" %sfield.setAccessible(true);%n", field.getSimpleName());
-                writer.printf("Object %s = %sfield.get(%s);%n", field.getSimpleName() + "Value", field.getSimpleName(), oldClassName);
-                writer.printf(" Field %sDTO = %s.class.getDeclaredField(\"%s\");%n", field.getSimpleName(), dtoClassName, field.getSimpleName());
-                writer.printf(" %s.setAccessible(true);%n", field.getSimpleName() + "DTO");
-                writer.printf("%s.set(dto, %s);%n%n", field.getSimpleName() + "DTO", field.getSimpleName() + "Value");
+                writer.printf("            Field %sfield = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
+                writer.printf("            %sfield.setAccessible(true);%n", fieldName);
+                writer.printf("            Object %sValue = %sfield.get(%s);%n%n", fieldName, fieldName, oldClassName);
 
+                writer.printf("            Field %sDTO = %s.class.getDeclaredField(\"%s\");%n", fieldName, dtoClassName, fieldName);
+                writer.printf("            %sDTO.setAccessible(true);%n", fieldName);
+                writer.printf("            %sDTO.set(dto, %sValue);%n%n", fieldName, fieldName);
             }
-            writer.printf(" } catch(NoSuchFieldException | IllegalAccessException e) {%n");
-            writer.printf("throw new RuntimeException(\"cant access field " + oldClassName + "\"" + " + e);%n");
-            writer.printf(" }%n");
 
-            writer.printf("        return dto;%n");
+            // Catch block and return
+            writer.println("        } catch (NoSuchFieldException | IllegalAccessException e) {");
+            writer.printf("            throw new RuntimeException(\"cant access fields from %s\" + e);%n", oldClassName);
+            writer.println("        }");
+            writer.println();
+            writer.println("        return dto;");
             writer.println("    }");
             writer.println("}");
+
         } catch (IOException e) {
             throw new RuntimeException("Error creating new Java File for " + oldClassName + ": " + e);
         }
     }
+
 
 }

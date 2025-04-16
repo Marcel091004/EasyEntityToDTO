@@ -1,6 +1,8 @@
 package org.lets_do_this_the_easy_way.codeGeneration;
 
 import com.google.auto.service.AutoService;
+import org.lets_do_this_the_easy_way.annotations.DTOExtraField;
+import org.lets_do_this_the_easy_way.annotations.DTOExtraFields;
 import org.lets_do_this_the_easy_way.annotations.DTOName;
 import org.lets_do_this_the_easy_way.annotations.ExcludeFromDTO;
 
@@ -39,6 +41,11 @@ public class DTOProcessor extends AbstractProcessor {
                 .filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null)
                 .toList();
 
+        DTOExtraFields extraFieldsAnnotation = element.getAnnotation(DTOExtraFields.class);
+        List<DTOExtraField> extraFields = extraFieldsAnnotation != null
+                ? List.of(extraFieldsAnnotation.value())
+                : List.of();
+
         try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(filePackageName).openWriter())) {
 
 
@@ -71,6 +78,29 @@ public class DTOProcessor extends AbstractProcessor {
 
                 ));
             });
+
+            for (DTOExtraField extra : extraFields) {
+                String name = extra.name();
+                String type = extra.type();
+                String defaultValue = extra.defaultValue();
+
+                writer.printf("""
+                                 private %s %s = %s;
+                                
+                                 public %s get%s() {
+                                   return this.%s;
+                                 }
+                                
+                                 public void set%s(%s %s) {
+                                    this.%s = %s;
+                                 }
+                                
+                                """,
+                        type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
+                        type, capitalize(name), name,
+                        capitalize(name), type, name, name, name
+                );
+            }
             writer.println("}");
 
             generateDTOMapper(element, fileName);
@@ -80,12 +110,26 @@ public class DTOProcessor extends AbstractProcessor {
         }
     }
 
+    private String capitalize(String name) {
+        return name.substring(0, 1).toUpperCase() + name.substring(1);
+    }
+
+    private String getDefaultValueForType(String type) {
+        return switch (type) {
+            case "int", "short", "byte", "long", "float", "double" -> "0";
+            case "boolean" -> "false";
+            case "char" -> "'\\0'";
+            default -> "null";
+        };
+    }
+
     private void generateDTOMapper(Element element, String dtoClassName) {
         String oldClassName = element.getSimpleName().toString();
         String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
         String fileName = oldClassName + "DTOMapper";
 
         List<? extends Element> fields = element.getEnclosedElements().stream().filter(e -> e.getKind().isField()).filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null).toList();
+
 
         try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(oldPackageName + "." + fileName).openWriter())) {
 

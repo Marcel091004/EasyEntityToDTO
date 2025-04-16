@@ -12,8 +12,14 @@ public class Main {
 
         ExampleUserDTO JohnDTO = ExampleUserDTOMapper.mapToExampleUserDTO(John);
 
+        //These Fields were added to the DTO via the @DTOExtraFields annotation
+        JohnDTO.setIsAdmin(true);
+        JohnDTO.setDisplayName("Doe, John");
+
         System.out.println(JohnDTO.getUsername());
         System.out.println(JohnDTO.getAge_in_years());
+        System.out.println("is Admin: " + JohnDTO.getIsAdmin());
+        System.out.println("Display name: " + JohnDTO.getDisplayName());
 
 
         ExampleUser user1 = new ExampleUser("alice", 30, "secret123");
@@ -26,7 +32,6 @@ public class Main {
         List<ExampleUserDTO> dtosList = ExampleUserDTOMapper.mapToExampleUserDTO(usersList);
 
         dtosList.forEach(dto -> System.out.println("Username: " + dto.getUsername() + ", Age: " + dto.getAge_in_years()));
-
 
 
         ExampleUser[] usersArray = {

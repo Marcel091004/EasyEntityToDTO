@@ -1,11 +1,13 @@
 package org.lets_do_this_the_easy_way;
 
 
-import org.lets_do_this_the_easy_way.annotations.DTOName;
-import org.lets_do_this_the_easy_way.annotations.ExcludeFromDTO;
-import org.lets_do_this_the_easy_way.annotations.ToDTO;
+import org.lets_do_this_the_easy_way.annotations.*;
 
 @ToDTO
+@DTOExtraFields({
+        @DTOExtraField(name = "isAdmin", type = "boolean", defaultValue = "false"),
+        @DTOExtraField(name = "displayName", type = "String")
+})
 public class ExampleUser {
 
     @DTOName(name = "Username")

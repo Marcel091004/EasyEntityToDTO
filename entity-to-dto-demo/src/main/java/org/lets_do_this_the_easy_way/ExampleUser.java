@@ -1,26 +1,19 @@
 package org.lets_do_this_the_easy_way;
 
+
+import org.lets_do_this_the_easy_way.annotations.*;
+
 @ToDTO
+@DTOExtraFields({
+        @DTOExtraField(name = "isAdmin", type = "boolean", defaultValue = "false"),
+        @DTOExtraField(name = "displayName", type = "String")
+})
 public class ExampleUser {
 
+    @DTOName(name = "Username")
     private String username;
 
-    public int getAge() {
-        return age;
-    }
-
-    public void setAge(int age) {
-        this.age = age;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
+    @DTOName(name = "age_in_years")
     private int age;
 
     @ExcludeFromDTO
@@ -30,5 +23,8 @@ public class ExampleUser {
         this.username = username;
         this.age = age;
         this.password = password;
+    }
+
+    public ExampleUser() {
     }
 }

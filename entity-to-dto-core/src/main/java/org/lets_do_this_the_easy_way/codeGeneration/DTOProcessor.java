@@ -10,6 +10,7 @@ import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
@@ -41,10 +42,17 @@ public class DTOProcessor extends AbstractProcessor {
                 .filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null)
                 .toList();
 
+        if (fields.isEmpty() && element.getAnnotation(DTOExtraFields.class) == null) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "@ToDTO class must have at least one eligible field.", element);
+            return;
+        }
+
         DTOExtraFields extraFieldsAnnotation = element.getAnnotation(DTOExtraFields.class);
         List<DTOExtraField> extraFields = extraFieldsAnnotation != null
                 ? List.of(extraFieldsAnnotation.value())
                 : List.of();
+
 
         try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(filePackageName).openWriter())) {
 
@@ -146,32 +154,35 @@ public class DTOProcessor extends AbstractProcessor {
             // Method signature
             writer.printf("    public static %s mapTo%s(%s %s) {%n", dtoClassName, dtoClassName, oldClassName, oldClassName);
             writer.printf("        %s dto = new %s();%n%n", dtoClassName, dtoClassName);
-            writer.println("        try {");
-            writer.println();
+            if (!fields.isEmpty()) {
 
-            // Field reflection logic
-            for (Element field : fields) {
-                String fieldName = field.getSimpleName().toString();
-                String fieldNameDTO = field.getSimpleName().toString();
+                writer.println("        try {");
+                writer.println();
 
-                if (field.getAnnotation(DTOName.class) != null) {
-                    DTOName dtoName = field.getAnnotation(DTOName.class);
-                    fieldNameDTO = dtoName.name();
+                // Field reflection logic
+                for (Element field : fields) {
+                    String fieldName = field.getSimpleName().toString();
+                    String fieldNameDTO = field.getSimpleName().toString();
+
+                    if (field.getAnnotation(DTOName.class) != null) {
+                        DTOName dtoName = field.getAnnotation(DTOName.class);
+                        fieldNameDTO = dtoName.name();
+                    }
+
+                    writer.printf("            Field %sfield = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
+                    writer.printf("            %sfield.setAccessible(true);%n", fieldName);
+                    writer.printf("            Object %sValue = %sfield.get(%s);%n%n", fieldName, fieldName, oldClassName);
+
+                    writer.printf("            Field %sDTO = %s.class.getDeclaredField(\"%s\");%n", fieldNameDTO, dtoClassName, fieldNameDTO);
+                    writer.printf("            %sDTO.setAccessible(true);%n", fieldNameDTO);
+                    writer.printf("            %sDTO.set(dto, %sValue);%n%n", fieldNameDTO, fieldName);
                 }
 
-                writer.printf("            Field %sfield = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
-                writer.printf("            %sfield.setAccessible(true);%n", fieldName);
-                writer.printf("            Object %sValue = %sfield.get(%s);%n%n", fieldName, fieldName, oldClassName);
-
-                writer.printf("            Field %sDTO = %s.class.getDeclaredField(\"%s\");%n", fieldNameDTO, dtoClassName, fieldNameDTO);
-                writer.printf("            %sDTO.setAccessible(true);%n", fieldNameDTO);
-                writer.printf("            %sDTO.set(dto, %sValue);%n%n", fieldNameDTO, fieldName);
+                // Catch block and return
+                writer.println("        } catch (NoSuchFieldException | IllegalAccessException e) {");
+                writer.printf("            throw new RuntimeException(\"cant access fields from %s\" + e);%n", oldClassName);
+                writer.println("        }");
             }
-
-            // Catch block and return
-            writer.println("        } catch (NoSuchFieldException | IllegalAccessException e) {");
-            writer.printf("            throw new RuntimeException(\"cant access fields from %s\" + e);%n", oldClassName);
-            writer.println("        }");
             writer.println();
             writer.println("        return dto;");
             writer.println("    }\n");
@@ -180,34 +191,9 @@ public class DTOProcessor extends AbstractProcessor {
             writer.printf("    public static List<%s> mapTo%s(List<%s> %sList) {%n", dtoClassName, dtoClassName, oldClassName, oldClassName);
             writer.printf("        List<%s> dtoList =  new ArrayList<>();%n%n", dtoClassName);
             writer.printf("        %sList.forEach(entity ->{%n%n", oldClassName);
-            writer.println("        try {");
-            writer.printf("             %s dto = new %s();%n", dtoClassName, dtoClassName);
-            writer.println();
 
-            // Field reflection logic
-            for (Element field : fields) {
-                String fieldName = field.getSimpleName().toString();
-                String fieldNameDTO = field.getSimpleName().toString();
+            writer.printf("           dtoList.add(%s.mapTo%s(entity));\n", dtoClassName + "Mapper", dtoClassName);
 
-                if (field.getAnnotation(DTOName.class) != null) {
-                    DTOName dtoName = field.getAnnotation(DTOName.class);
-                    fieldNameDTO = dtoName.name();
-                }
-
-                writer.printf("            Field %sfield = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
-                writer.printf("            %sfield.setAccessible(true);%n", fieldName);
-                writer.printf("            Object %sValue = %sfield.get(entity);%n%n", fieldName, fieldName);
-
-                writer.printf("            Field %sDTO = %s.class.getDeclaredField(\"%s\");%n", fieldNameDTO, dtoClassName, fieldNameDTO);
-                writer.printf("            %sDTO.setAccessible(true);%n", fieldNameDTO);
-                writer.printf("            %sDTO.set(dto, %sValue);%n%n", fieldNameDTO, fieldName);
-            }
-            writer.println("            dtoList.add(dto);");
-
-            // Catch block and return
-            writer.println("             } catch (NoSuchFieldException | IllegalAccessException e) {");
-            writer.printf("                throw new RuntimeException(\"cant access fields from %s\" + e);%n", oldClassName);
-            writer.println("            }");
             writer.println("        });");
             writer.println("        return dtoList;");
             writer.println("    }\n");
@@ -216,34 +202,10 @@ public class DTOProcessor extends AbstractProcessor {
             writer.printf("    public static %s[] mapTo%s(%s[] %sArray) {%n", dtoClassName, dtoClassName, oldClassName, oldClassName);
             writer.printf("        %s[] dtoArray = new %s[%sArray.length];%n", dtoClassName, dtoClassName, oldClassName);
             writer.printf("       for(int i = 0; i < dtoArray.length; i++) {%n%n");
-            writer.println("        try {");
-            writer.printf("             %s dto = new %s();%n", dtoClassName, dtoClassName);
-            writer.println();
 
-            // Field reflection logic
-            for (Element field : fields) {
-                String fieldName = field.getSimpleName().toString();
-                String fieldNameDTO = field.getSimpleName().toString();
+            writer.printf("           dtoArray[i] = %s.mapTo%s(%sArray[i]);\n", dtoClassName + "Mapper", dtoClassName, oldClassName);
 
-                if (field.getAnnotation(DTOName.class) != null) {
-                    DTOName dtoName = field.getAnnotation(DTOName.class);
-                    fieldNameDTO = dtoName.name();
-                }
 
-                writer.printf("            Field %sfield = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
-                writer.printf("            %sfield.setAccessible(true);%n", fieldName);
-                writer.printf("            Object %sValue = %sfield.get(%sArray[i]);%n%n", fieldName, fieldName, oldClassName);
-
-                writer.printf("            Field %sDTO = %s.class.getDeclaredField(\"%s\");%n", fieldNameDTO, dtoClassName, fieldNameDTO);
-                writer.printf("            %sDTO.setAccessible(true);%n", fieldNameDTO);
-                writer.printf("            %sDTO.set(dto, %sValue);%n%n", fieldNameDTO, fieldName);
-            }
-            writer.println("            dtoArray[i] = dto;");
-
-            // Catch block and return
-            writer.println("             } catch (NoSuchFieldException | IllegalAccessException e) {");
-            writer.printf("                throw new RuntimeException(\"cant access fields from %s\" + e);%n", oldClassName);
-            writer.println("            }");
             writer.println("        }");
             writer.println("        return dtoArray;");
             writer.println("    }");
@@ -252,30 +214,34 @@ public class DTOProcessor extends AbstractProcessor {
             writer.printf("    public static %s mapTo%s(%s dto) {%n", oldClassName, oldClassName, dtoClassName);
             writer.printf("        //Every Entity has to have a default constructor%n");
             writer.printf("        %s entity = new %s();%n%n", oldClassName, oldClassName);
-            writer.println("        try {");
-            writer.println();
 
-            for (Element field : fields) {
-                String fieldName = field.getSimpleName().toString();
-                String fieldNameDTO = field.getSimpleName().toString();
+            if (!fields.isEmpty()) {
 
-                if (field.getAnnotation(DTOName.class) != null) {
-                    DTOName dtoName = field.getAnnotation(DTOName.class);
-                    fieldNameDTO = dtoName.name();
+                writer.println("        try {");
+                writer.println();
+
+                for (Element field : fields) {
+                    String fieldName = field.getSimpleName().toString();
+                    String fieldNameDTO = field.getSimpleName().toString();
+
+                    if (field.getAnnotation(DTOName.class) != null) {
+                        DTOName dtoName = field.getAnnotation(DTOName.class);
+                        fieldNameDTO = dtoName.name();
+                    }
+
+                    writer.printf("            Field %sField = %s.class.getDeclaredField(\"%s\");%n", fieldName, dtoClassName, fieldName);
+                    writer.printf("            %sField.setAccessible(true);%n", fieldName);
+                    writer.printf("            Object %sValue = %sField.get(dto);%n%n", fieldName, fieldName);
+
+                    writer.printf("            Field %sEntityField = %s.class.getDeclaredField(\"%s\");%n", fieldNameDTO, oldClassName, fieldNameDTO);
+                    writer.printf("            %sEntityField.setAccessible(true);%n", fieldNameDTO);
+                    writer.printf("            %sEntityField.set(entity, %sValue);%n%n", fieldNameDTO, fieldName);
                 }
 
-                writer.printf("            Field %sField = %s.class.getDeclaredField(\"%s\");%n", fieldName, dtoClassName, fieldName);
-                writer.printf("            %sField.setAccessible(true);%n", fieldName);
-                writer.printf("            Object %sValue = %sField.get(dto);%n%n", fieldName, fieldName);
-
-                writer.printf("            Field %sEntityField = %s.class.getDeclaredField(\"%s\");%n", fieldNameDTO, oldClassName, fieldNameDTO);
-                writer.printf("            %sEntityField.setAccessible(true);%n", fieldNameDTO);
-                writer.printf("            %sEntityField.set(entity, %sValue);%n%n", fieldNameDTO, fieldName);
+                writer.println("        } catch (NoSuchFieldException | IllegalAccessException e) {");
+                writer.printf("            throw new RuntimeException(\"cant access fields from %s\" + e);%n", dtoClassName);
+                writer.println("        }");
             }
-
-            writer.println("        } catch (NoSuchFieldException | IllegalAccessException e) {");
-            writer.printf("            throw new RuntimeException(\"cant access fields from %s\" + e);%n", dtoClassName);
-            writer.println("        }");
             writer.println();
             writer.println("        return entity;");
             writer.println("    }\n");
@@ -284,33 +250,8 @@ public class DTOProcessor extends AbstractProcessor {
             writer.printf("    public static List<%s> mapTo%s(List<%s> dtoList) {%n", oldClassName, oldClassName, dtoClassName);
             writer.printf("        List<%s> entityList = new ArrayList<>();%n%n", oldClassName);
             writer.println("        dtoList.forEach(dto -> {");
-            writer.println("            try {");
-            writer.printf("                //Every Entity has to have a default constructor%n");
-            writer.printf("                %s entity = new %s();%n", oldClassName, oldClassName);
-            writer.println();
+            writer.printf("            entityList.add(%s.mapTo%s(dto));\n", dtoClassName + "Mapper", oldClassName);
 
-            for (Element field : fields) {
-                String fieldName = field.getSimpleName().toString();
-                String fieldNameDTO = field.getSimpleName().toString();
-
-                if (field.getAnnotation(DTOName.class) != null) {
-                    DTOName dtoName = field.getAnnotation(DTOName.class);
-                    fieldNameDTO = dtoName.name();
-                }
-
-                writer.printf("                Field %sField = %s.class.getDeclaredField(\"%s\");%n", fieldName, dtoClassName, fieldName);
-                writer.printf("                %sField.setAccessible(true);%n", fieldName);
-                writer.printf("                Object %sValue = %sField.get(dto);%n%n", fieldName, fieldName);
-
-                writer.printf("                Field %sEntityField = %s.class.getDeclaredField(\"%s\");%n", fieldNameDTO, oldClassName, fieldNameDTO);
-                writer.printf("                %sEntityField.setAccessible(true);%n", fieldNameDTO);
-                writer.printf("                %sEntityField.set(entity, %sValue);%n%n", fieldNameDTO, fieldName);
-            }
-
-            writer.println("                entityList.add(entity);");
-            writer.println("            } catch (NoSuchFieldException | IllegalAccessException e) {");
-            writer.printf("                throw new RuntimeException(\"cant access fields from %s\" + e);%n", dtoClassName);
-            writer.println("            }");
             writer.println("        });");
             writer.println("        return entityList;");
             writer.println("    }\n");
@@ -319,33 +260,9 @@ public class DTOProcessor extends AbstractProcessor {
             writer.printf("    public static %s[] mapTo%s(%s[] dtoArray) {%n", oldClassName, oldClassName, dtoClassName);
             writer.printf("        %s[] entityArray = new %s[dtoArray.length];%n", oldClassName, oldClassName);
             writer.println("        for (int i = 0; i < dtoArray.length; i++) {");
-            writer.println("            try {");
-            writer.printf("                //Every Entity has to have a default constructor%n");
-            writer.printf("                %s entity = new %s();%n", oldClassName, oldClassName);
-            writer.println();
 
-            for (Element field : fields) {
-                String fieldName = field.getSimpleName().toString();
-                String fieldNameDTO = field.getSimpleName().toString();
+            writer.printf("            entityArray[i]= %s.mapTo%s(dtoArray[i]);\n", dtoClassName + "Mapper", oldClassName);
 
-                if (field.getAnnotation(DTOName.class) != null) {
-                    DTOName dtoName = field.getAnnotation(DTOName.class);
-                    fieldNameDTO = dtoName.name();
-                }
-
-                writer.printf("                Field %sField = %s.class.getDeclaredField(\"%s\");%n", fieldName, dtoClassName, fieldName);
-                writer.printf("                %sField.setAccessible(true);%n", fieldName);
-                writer.printf("                Object %sValue = %sField.get(dtoArray[i]);%n%n", fieldName, fieldName);
-
-                writer.printf("                Field %sEntityField = %s.class.getDeclaredField(\"%s\");%n", fieldNameDTO, oldClassName, fieldNameDTO);
-                writer.printf("                %sEntityField.setAccessible(true);%n", fieldNameDTO);
-                writer.printf("                %sEntityField.set(entity, %sValue);%n%n", fieldNameDTO, fieldName);
-            }
-
-            writer.println("                entityArray[i] = entity;");
-            writer.println("            } catch (NoSuchFieldException | IllegalAccessException e) {");
-            writer.printf("                throw new RuntimeException(\"cant access fields from %s\" + e);%n", dtoClassName);
-            writer.println("            }");
             writer.println("        }");
             writer.println("        return entityArray;");
             writer.println("    }\n");

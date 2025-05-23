@@ -250,7 +250,7 @@ public class DTOProcessor extends AbstractProcessor {
             writer.printf("    public static List<%s> mapTo%s(List<%s> dtoList) {%n", oldClassName, oldClassName, dtoClassName);
             writer.printf("        List<%s> entityList = new ArrayList<>();%n%n", oldClassName);
             writer.println("        dtoList.forEach(dto -> {");
-            writer.printf("            entityList.add(%s.mapTo%s(dto));\n", dtoClassName+"Mapper", oldClassName);
+            writer.printf("            entityList.add(%s.mapTo%s(dto));\n", dtoClassName + "Mapper", oldClassName);
 
             writer.println("        });");
             writer.println("        return entityList;");
@@ -261,8 +261,7 @@ public class DTOProcessor extends AbstractProcessor {
             writer.printf("        %s[] entityArray = new %s[dtoArray.length];%n", oldClassName, oldClassName);
             writer.println("        for (int i = 0; i < dtoArray.length; i++) {");
 
-            //TODO
-            writer.printf("            entityArray[i]= %s.mapTo%s(dtoArray[i]);\n", dtoClassName+"Mapper", oldClassName);
+            writer.printf("            entityArray[i]= %s.mapTo%s(dtoArray[i]);\n", dtoClassName + "Mapper", oldClassName);
 
             writer.println("        }");
             writer.println("        return entityArray;");

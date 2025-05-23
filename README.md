@@ -15,9 +15,9 @@ Using [JitPack](https://jitpack.io):
 </repositories>
 
 <dependency>
-    <groupId>com.github.Marcel091004</groupId>
-    <artifactId>EasyEntityToDTO</artifactId>
-    <version>v1.1.0</version>
+<groupId>com.github.Marcel091004</groupId>
+<artifactId>EasyEntityToDTO</artifactId>
+<version>v1.1.1</version>
 </dependency>
 ```
 
@@ -29,8 +29,8 @@ Here's how you can eliminate boilerplate and generate a DTO in seconds:
 ```java
 @ToDTO // 👈 Automatically generates a DTO and Mapper
 @DTOExtraFields({ // ➕ Add custom fields to your DTO
-    @DTOExtraField(name = "isAdmin", type = "boolean", defaultValue = "false"),
-    @DTOExtraField(name = "displayName", type = "String")
+        @DTOExtraField(name = "isAdmin", type = "boolean", defaultValue = "false"),
+        @DTOExtraField(name = "displayName", type = "String")
 })
 public class ExampleUser {
 
@@ -49,7 +49,7 @@ public class ExampleUser {
     }
 
     public ExampleUser() {} // Default constructor is required for mapper instantiation 
-  
+
 }
 
 ```
@@ -73,38 +73,38 @@ ExampleUser john = new ExampleUser("John Doe", 25, "secret123");
 ExampleUserDTO dto = ExampleUserDTOMapper.mapToExampleUserDTO(john);
 
 System.out.println(dto.getUsername());   // → John Doe
-System.out.println(dto.getAge());        // → 25
-System.out.println(dto.isAdmin());       // → false
-System.out.println(dto.getDisplayName()); // → null
+        System.out.println(dto.getAge());        // → 25
+        System.out.println(dto.isAdmin());       // → false
+        System.out.println(dto.getDisplayName()); // → null
 
 // OR
 
-  ExampleUser user1 = new ExampleUser("alice", 30, "secret123");
-        ExampleUser user2 = new ExampleUser("bob", 25, "hunter2");
+ExampleUser user1 = new ExampleUser("alice", 30, "secret123");
+ExampleUser user2 = new ExampleUser("bob", 25, "hunter2");
 
-        List<ExampleUser> usersList = new ArrayList<>();
+List<ExampleUser> usersList = new ArrayList<>();
         usersList.add(user1);
         usersList.add(user2);
 
-        List<ExampleUserDTO> dtosList = ExampleUserDTOMapper.mapToExampleUserDTO(usersList);
+List<ExampleUserDTO> dtosList = ExampleUserDTOMapper.mapToExampleUserDTO(usersList);
 ```
 ## 🎯 Features
 
-- ✅ Automatic DTO generation  
-- ✅ Automatic Mapper generation  
-- ✅ Exclude fields with `@ExcludeFromDTO`  
-- ✅ Add virtual fields with `@DTOExtraFields` — even if they don’t exist in the original class!  
-- ✅ Set default values for extra fields  
-- ✅ Clean output with no boilerplate  
+- ✅ Automatic DTO generation
+- ✅ Automatic Mapper generation
+- ✅ Exclude fields with `@ExcludeFromDTO`
+- ✅ Add virtual fields with `@DTOExtraFields` — even if they don’t exist in the original class!
+- ✅ Set default values for extra fields
+- ✅ Clean output with no boilerplate
 - ✅ Fast compile-time processing using Java Annotation Processing (APT)
 
 
 ## 💎 Why Use This?
 
-- ✨ Less boilerplate  
-- 🧼 Clean and simple annotations  
-- ⚡ Works out of the box  
-- 🚀 Fast and lightweight  
+- ✨ Less boilerplate
+- 🧼 Clean and simple annotations
+- ⚡ Works out of the box
+- 🚀 Fast and lightweight
 - 🔮 Supports both real and custom fields via reflection
 
 📦 Output File Location

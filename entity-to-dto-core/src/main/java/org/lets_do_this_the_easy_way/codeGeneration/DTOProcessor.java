@@ -137,7 +137,13 @@ public class DTOProcessor extends AbstractProcessor {
     private void generateDTOMapper(Element element, String dtoClassName) {
         String oldClassName = element.getSimpleName().toString();
         String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
+
         String fileName = oldClassName + "DTOMapper";
+
+        ToDTO toDTO = element.getAnnotation(ToDTO.class);
+        if (!toDTO.className().isEmpty()) {
+            fileName = toDTO.className() + "Mapper";
+        }
 
         List<? extends Element> fields = element.getEnclosedElements().stream().filter(e -> e.getKind().isField()).filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null).toList();
 

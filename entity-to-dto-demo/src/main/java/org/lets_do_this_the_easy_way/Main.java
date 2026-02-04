@@ -10,7 +10,7 @@ public class Main {
 
         ExampleUser John = new ExampleUser("John Doe", 25, "very secure password");
 
-        UserDTO JohnDTO = ExampleUserDTOMapper.mapToUserDTO(John);
+        UserDTO JohnDTO = UserDTOMapper.mapToUserDTO(John);
 
         //These Fields were added to the DTO via the @DTOExtraFields annotation
         JohnDTO.setIsAdmin(true);
@@ -29,7 +29,7 @@ public class Main {
         usersList.add(user1);
         usersList.add(user2);
 
-        List<UserDTO> dtosList = ExampleUserDTOMapper.mapToUserDTO(usersList);
+        List<UserDTO> dtosList = UserDTOMapper.mapToUserDTO(usersList);
 
         dtosList.forEach(dto -> System.out.println("Username: " + dto.getUsername() + ", Age: " + dto.getAge_in_years()));
 
@@ -39,7 +39,7 @@ public class Main {
                 new ExampleUser("JOHN CENA", 25, "hunter2")
         };
 
-        UserDTO[] dtosArray = ExampleUserDTOMapper.mapToUserDTO(usersArray);
+        UserDTO[] dtosArray = UserDTOMapper.mapToUserDTO(usersArray);
 
         Arrays.stream(dtosArray).forEach(dto ->
                 System.out.println("Username: " + dto.getUsername() + ", Age: " + dto.getAge_in_years())

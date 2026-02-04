@@ -1,10 +1,7 @@
 package org.lets_do_this_the_easy_way.codeGeneration;
 
 import com.google.auto.service.AutoService;
-import org.lets_do_this_the_easy_way.annotations.DTOExtraField;
-import org.lets_do_this_the_easy_way.annotations.DTOExtraFields;
-import org.lets_do_this_the_easy_way.annotations.DTOName;
-import org.lets_do_this_the_easy_way.annotations.ExcludeFromDTO;
+import org.lets_do_this_the_easy_way.annotations.*;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -31,8 +28,14 @@ public class DTOProcessor extends AbstractProcessor {
     private void generateDTOFile(Element element) {
 
         String oldClassName = element.getSimpleName().toString();
-        String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
         String fileName = oldClassName + "DTO";
+
+        ToDTO toDTO = element.getAnnotation(ToDTO.class);
+        if (!toDTO.className().isEmpty()) {
+            fileName = toDTO.className();
+        }
+
+        String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
         String filePackageName = oldPackageName + "." + fileName;
 
         List<? extends Element> fields = element

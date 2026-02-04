@@ -3,7 +3,7 @@ package org.lets_do_this_the_easy_way;
 
 import org.lets_do_this_the_easy_way.annotations.*;
 
-@ToDTO
+@ToDTO(className = "UserDTO")
 @DTOExtraFields({
         @DTOExtraField(name = "isAdmin", type = "boolean", defaultValue = "false"),
         @DTOExtraField(name = "displayName", type = "String")

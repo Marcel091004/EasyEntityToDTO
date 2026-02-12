@@ -86,11 +86,11 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
 
                 writer.println("""
                          private %s %s;
-                        
+
                          public %s get%s() {
                            return this.%s;
                          }
-                        
+
                          public void set%s(%s %s) {
                             this.%s = %s;
                          }
@@ -104,36 +104,35 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
                 String type = extra.type();
                 String defaultValue = extra.defaultValue();
 
-                if (!Objects.equals(type, "String")) {
+                if (Objects.equals(type, "String") && !(Objects.equals(defaultValue, ""))) {
                     writer.printf("""
-                                     private %s %s = %s;
-                                    
+                                     private %s %s = "%s";
+
                                      public %s get%s() {
                                        return this.%s;
                                      }
-                                    
+
                                      public void set%s(%s %s) {
                                         this.%s = %s;
                                      }
-                                    
+
                                     """,
-                            type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
+                            type, name, defaultValue,
                             type, capitalize(name), name,
                             capitalize(name), type, name, name, name
                     );
                 } else {
-
                     writer.printf("""
-                                     private %s %s = "%s";
-                                    
+                                     private %s %s = %s;
+
                                      public %s get%s() {
                                        return this.%s;
                                      }
-                                    
+
                                      public void set%s(%s %s) {
                                         this.%s = %s;
                                      }
-                                    
+
                                     """,
                             type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
                             type, capitalize(name), name,

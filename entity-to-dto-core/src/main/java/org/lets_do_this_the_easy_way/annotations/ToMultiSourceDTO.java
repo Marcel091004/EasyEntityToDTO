@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
-public @interface ToDTO {
-    String className() default "";
+public @interface ToMultiSourceDTO {
+    String identifierName();
+
 }

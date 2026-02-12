@@ -1,10 +1,7 @@
 package org.lets_do_this_the_easy_way.codeGeneration;
 
 import com.google.auto.service.AutoService;
-import org.lets_do_this_the_easy_way.annotations.DTOExtraField;
-import org.lets_do_this_the_easy_way.annotations.DTOExtraFields;
-import org.lets_do_this_the_easy_way.annotations.DTOName;
-import org.lets_do_this_the_easy_way.annotations.ExcludeFromDTO;
+import org.lets_do_this_the_easy_way.annotations.*;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -14,6 +11,7 @@ import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 
@@ -31,8 +29,14 @@ public class DTOProcessor extends AbstractProcessor {
     private void generateDTOFile(Element element) {
 
         String oldClassName = element.getSimpleName().toString();
-        String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
         String fileName = oldClassName + "DTO";
+
+        ToDTO toDTO = element.getAnnotation(ToDTO.class);
+        if (!toDTO.className().isEmpty()) {
+            fileName = toDTO.className();
+        }
+
+        String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
         String filePackageName = oldPackageName + "." + fileName;
 
         List<? extends Element> fields = element
@@ -59,7 +63,7 @@ public class DTOProcessor extends AbstractProcessor {
 
             writer.println("""
                     package %s;
-                    
+
                     public class %s {
                     """.formatted(oldPackageName, fileName));
 
@@ -74,11 +78,11 @@ public class DTOProcessor extends AbstractProcessor {
 
                 writer.println("""
                          private %s %s;
-                        
+
                          public %s get%s() {
                            return this.%s;
                          }
-                        
+
                          public void set%s(%s %s) {
                             this.%s = %s;
                          }
@@ -92,22 +96,41 @@ public class DTOProcessor extends AbstractProcessor {
                 String type = extra.type();
                 String defaultValue = extra.defaultValue();
 
-                writer.printf("""
-                                 private %s %s = %s;
-                                
-                                 public %s get%s() {
-                                   return this.%s;
-                                 }
-                                
-                                 public void set%s(%s %s) {
-                                    this.%s = %s;
-                                 }
-                                
-                                """,
-                        type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
-                        type, capitalize(name), name,
-                        capitalize(name), type, name, name, name
-                );
+                if (Objects.equals(type, "String") && !(Objects.equals(defaultValue, ""))) {
+                    writer.printf("""
+                                     private %s %s = "%s";
+
+                                     public %s get%s() {
+                                       return this.%s;
+                                     }
+
+                                     public void set%s(%s %s) {
+                                        this.%s = %s;
+                                     }
+
+                                    """,
+                            type, name, defaultValue,
+                            type, capitalize(name), name,
+                            capitalize(name), type, name, name, name
+                    );
+                } else {
+                    writer.printf("""
+                                     private %s %s = %s;
+
+                                     public %s get%s() {
+                                       return this.%s;
+                                     }
+
+                                     public void set%s(%s %s) {
+                                        this.%s = %s;
+                                     }
+
+                                    """,
+                            type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
+                            type, capitalize(name), name,
+                            capitalize(name), type, name, name, name
+                    );
+                }
             }
             writer.println("}");
 
@@ -134,7 +157,13 @@ public class DTOProcessor extends AbstractProcessor {
     private void generateDTOMapper(Element element, String dtoClassName) {
         String oldClassName = element.getSimpleName().toString();
         String oldPackageName = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
+
         String fileName = oldClassName + "DTOMapper";
+
+        ToDTO toDTO = element.getAnnotation(ToDTO.class);
+        if (!toDTO.className().isEmpty()) {
+            fileName = toDTO.className() + "Mapper";
+        }
 
         List<? extends Element> fields = element.getEnclosedElements().stream().filter(e -> e.getKind().isField()).filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null).toList();
 

@@ -1,11 +1,11 @@
-package ProcessorTest;
+package ProcessorTesting;
 
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.lets_do_this_the_easy_way.codeGeneration.DTOProcessor;
+import org.lets_do_this_the_easy_way.codeGeneration.MultiSourceDTOProcessor;
 
 import javax.tools.JavaFileObject;
 
@@ -14,7 +14,7 @@ import static com.google.testing.compile.CompilationSubject.assertThat;
 public class DTOProcessorTest {
 
     @Test
-    void shouldGenerateDTOAndMapper() {
+    public void shouldGenerateDTOAndMapper() {
         JavaFileObject input = JavaFileObjects.forSourceString("example.User", """
                        package example;
                 
@@ -114,7 +114,107 @@ public class DTOProcessorTest {
     }
 
     @Test
-    void shouldNotGenerateDTOAndMapperWhenNoFields() {
+    public void shouldGenerateDTOAndMapperWithRename() {
+        JavaFileObject input = JavaFileObjects.forSourceString("example.User", """
+                       package example;
+                
+                       import org.lets_do_this_the_easy_way.annotations.*;
+                
+                       @ToDTO(className = "CoolerUser")
+                       @DTOExtraFields({
+                                       @DTOExtraField(name = "isCool", type = "boolean", defaultValue = "true"),
+                                       @DTOExtraField(name = "full_name", type = "String")
+                               })
+                       public class User {
+                \s
+                           @DTOName(name = "Username")
+                           public String name;
+                          \s
+                           @DTOName(name = "age_in_years")
+                           public int age;
+                          \s
+                           @ExcludeFromDTO
+                           private String privateStuff;
+                       }
+                  \s""");
+
+        Compilation compilation = Compiler.javac()
+                .withProcessors(new DTOProcessor())
+                .compile(input);
+
+        assertThat(compilation).succeeded();
+
+        //The DTO
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUser")
+                .contentsAsUtf8String()
+                .contains("public class CoolerUser");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUser")
+                .contentsAsUtf8String()
+                .contains("private java.lang.String Username;");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUser")
+                .contentsAsUtf8String()
+                .doesNotContain("private java.lang.String name;");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUser")
+                .contentsAsUtf8String()
+                .contains("private int age_in_years;");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUser")
+                .contentsAsUtf8String()
+                .doesNotContain("private int age;");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUser")
+                .contentsAsUtf8String()
+                .doesNotContain("private java.lang.String privateStuff;");
+
+
+        //Mapper
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUserMapper")
+                .contentsAsUtf8String()
+                .contains("public class CoolerUserMapper");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUserMapper")
+                .contentsAsUtf8String()
+                .contains("public static CoolerUser mapToCoolerUser(User User)");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUserMapper")
+                .contentsAsUtf8String()
+                .contains("public static List<CoolerUser> mapToCoolerUser(List<User> UserList)");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUserMapper")
+                .contentsAsUtf8String()
+                .contains("public static CoolerUser[] mapToCoolerUser(User[] UserArray)");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUserMapper")
+                .contentsAsUtf8String()
+                .contains("public static User mapToUser(CoolerUser dto)");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUserMapper")
+                .contentsAsUtf8String()
+                .contains("public static List<User> mapToUser(List<CoolerUser> dtoList)");
+
+        assertThat(compilation)
+                .generatedSourceFile("example.CoolerUserMapper")
+                .contentsAsUtf8String()
+                .contains("public static User[] mapToUser(CoolerUser[] dtoArray)");
+    }
+
+    @Test
+    public void shouldNotGenerateDTOAndMapperWhenNoFields() {
         JavaFileObject input = JavaFileObjects.forSourceString("example.User", """
                      package example;
                 
@@ -133,7 +233,7 @@ public class DTOProcessorTest {
     }
 
     @Test
-    void shouldGenerateDTOAndMapperWhenDTOExtraFieldsExist() {
+    public void shouldGenerateDTOAndMapperWhenDTOExtraFieldsExist() {
         JavaFileObject input = JavaFileObjects.forSourceString("example.User", """
                      package example;
                 
@@ -197,7 +297,7 @@ public class DTOProcessorTest {
     }
 
     @Test
-    void shouldNotGenerateDTOAndMapperWhenDTOExtraFieldsContainNonExistingTypes() {
+    public void shouldNotGenerateDTOAndMapperWhenDTOExtraFieldsContainNonExistingTypes() {
         JavaFileObject input = JavaFileObjects.forSourceString("example.User", """
                      package example;
                 
@@ -220,7 +320,7 @@ public class DTOProcessorTest {
     }
 
     @Test
-    void shouldNotGenerateDTOAndMapperFieldWhenFieldIsAnnotatedTwice() {
+    public void shouldNotGenerateDTOAndMapperFieldWhenFieldIsAnnotatedTwice() {
         JavaFileObject input = JavaFileObjects.forSourceString("example.User", """
                         package example;
                 \s
@@ -266,9 +366,8 @@ public class DTOProcessorTest {
                 .doesNotContain("private java.lang.String secret;");
     }
 
-
     @Test
-    void shouldGenerateDTOAndMapperFieldEvenForInnerClass() {
+    public void shouldGenerateDTOAndMapperFieldEvenForInnerClass() {
         JavaFileObject input = JavaFileObjects.forSourceString("example.User", """
                         package example;
                 \s
@@ -327,31 +426,119 @@ public class DTOProcessorTest {
     }
 
     @Test
-    void testGeneratedMapperAtRuntime() {
-        TestPet dog = new TestPet();
+    public void shouldGenerateDTOAndMapperForMultiSourceDTO() {
+        JavaFileObject input = JavaFileObjects.forSourceString("example.User", """
+                       package example;
+                
+                       import org.lets_do_this_the_easy_way.annotations.*;
+                
+                       @ToMultiSourceDTO(identifierName = "CoolerUser")
+                       @DTOExtraFields({
+                                       @DTOExtraField(name = "isCool", type = "boolean", defaultValue = "true"),
+                                       @DTOExtraField(name = "full_name", type = "String")
+                               })
+                       public class User {
+                \s
+                           @DTOName(name = "Username")
+                           public String name;
+                          \s
+                           @DTOName(name = "age_in_years")
+                           public int age;
+                          \s
+                           @ExcludeFromDTO
+                           private String privateStuff;
+                       }
+                  \s""");
 
-        dog.name = "Fini";
-        dog.type = "Chihuahua";
+        JavaFileObject input2 = JavaFileObjects.forSourceString("example.House", """
+                       package example;
+                
+                       import org.lets_do_this_the_easy_way.annotations.*;
+                
+                       @ToMultiSourceDTO(identifierName = "CoolerUser")
+                       @DTOExtraFields({
+                                       @DTOExtraField(name = "isHouse", type = "boolean", defaultValue = "true"),
+                                       @DTOExtraField(name = "address", type = "String", defaultValue = "Middle of nowhere"),
+                                        @DTOExtraField(name = "color", type = "String")
+                               })
+                       public class House {
+                \s
+                           @DTOName(name = "house_age")
+                           public int age_in_years;
+                          \s
+                           @ExcludeFromDTO
+                           private String privateStuff;
+                       }
+                  \s""");
 
-        TestUser testUser = new TestUser();
+        Compilation compilation = Compiler.javac()
+                .withProcessors(new MultiSourceDTOProcessor(), new DTOProcessor())
+                .compile(input, input2);
 
-        testUser.testPet = dog;
-        testUser.name = "John Doe";
-        testUser.testPetEmpty = new TestPetEmpty();
+        assertThat(compilation).succeeded();
 
-        TestUserDTO testUserDTO = TestUserDTOMapper.mapToTestUserDTO(testUser);
+        //The DTO
+        assertThat(compilation)
+                .generatedSourceFile("CoolerUser")
+                .contentsAsUtf8String()
+                .contains("public class CoolerUser");
 
-        Assertions.assertEquals("John Doe", testUserDTO.getName());
-        Assertions.assertEquals("Fini", testUserDTO.getTestPet().name);
-        Assertions.assertEquals("Chihuahua", testUserDTO.getTestPet().type);
-        Assertions.assertEquals(testUser.testPetEmpty, testUserDTO.getTestPetEmpty());
+        assertThat(compilation)
+                .generatedSourceFile("CoolerUser")
+                .contentsAsUtf8String()
+                .contains("private java.lang.String Username;");
 
-        TestUser testUser2 = TestUserDTOMapper.mapToTestUser(testUserDTO);
+        assertThat(compilation)
+                .generatedSourceFile("CoolerUser")
+                .contentsAsUtf8String()
+                .doesNotContain("private java.lang.String name;");
 
-        Assertions.assertEquals("John Doe", testUser2.name);
-        Assertions.assertEquals("Fini", testUser2.testPet.name);
-        Assertions.assertEquals("Chihuahua", testUser2.testPet.type);
-        Assertions.assertEquals(testUser.testPetEmpty, testUser2.testPetEmpty);
+        assertThat(compilation)
+                .generatedSourceFile("CoolerUser")
+                .contentsAsUtf8String()
+                .contains("private int age_in_years;");
+
+        assertThat(compilation)
+                .generatedSourceFile("CoolerUser")
+                .contentsAsUtf8String()
+                .doesNotContain("private int age;");
+
+        assertThat(compilation)
+                .generatedSourceFile("CoolerUser")
+                .contentsAsUtf8String()
+                .doesNotContain("private java.lang.String privateStuff;");
+
+        assertThat(compilation)
+                .generatedSourceFile("CoolerUser")
+                .contentsAsUtf8String()
+                .contains("private boolean isHouse = true;");
+
+        assertThat(compilation)
+                .generatedSourceFile("CoolerUser")
+                .contentsAsUtf8String()
+                .contains("String address = \"Middle of nowhere\";");
+
+        assertThat(compilation)
+                .generatedSourceFile("CoolerUser")
+                .contentsAsUtf8String()
+                .contains("String color = null;");
+
+        assertThat(compilation)
+                .generatedSourceFile("CoolerUser")
+                .contentsAsUtf8String()
+                .contains("int house_age;");
+
+        //Mapper
+        assertThat(compilation)
+                .generatedSourceFile("org.lets_do_this_the_easy_way.generated.CoolerUserMapper")
+                .contentsAsUtf8String()
+                .contains("public class CoolerUserMapper");
+
+        assertThat(compilation)
+                .generatedSourceFile("org.lets_do_this_the_easy_way.generated.CoolerUserMapper")
+                .contentsAsUtf8String()
+                .contains("public static CoolerUser mapToCoolerUser(House house, User user)");
+
     }
 
 

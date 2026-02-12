@@ -14,10 +14,10 @@ Using [JitPack](https://jitpack.io):
     </repository>
 </repositories>
 
-<dependency>
-<groupId>com.github.Marcel091004</groupId>
-<artifactId>EasyEntityToDTO</artifactId>
-<version>v1.2.0</version>
+ <dependency>
+            <groupId>com.github.Marcel091004.EasyEntityToDTO</groupId>
+            <artifactId>entity-to-dto-core</artifactId>
+            <version>v1.2.0</version>
 </dependency>
 ```
 

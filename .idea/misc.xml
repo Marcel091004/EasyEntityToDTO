@@ -9,6 +9,7 @@
     </option>
     <option name="ignoredFiles">
       <set>
+        <option value="$PROJECT_DIR$/TF/pom.xml" />
         <option value="$PROJECT_DIR$/entity-to-dto-demo/pom.xml" />
       </set>
     </option>

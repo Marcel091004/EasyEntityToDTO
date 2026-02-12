@@ -9,7 +9,7 @@
 
     <modules>
         <module>entity-to-dto-core</module>
-        <module>TF</module>
+        <module>Testing</module>
     </modules>
 
     <properties>

@@ -10,9 +10,7 @@ import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,52 +29,34 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
     }
 
     private void generateMultiSourceDTOFile(Set<? extends Element> elements) {
+        // Group all elements by their identifierName
+        Map<String, List<Element>> groups = elements.stream()
+                .collect(Collectors.groupingBy(
+                        e -> e.getAnnotation(ToMultiSourceDTO.class).identifierName()
+                ));
 
-        while (!elements.isEmpty()) {
-            Element currentElement = elements.iterator().next();
-            elements = generateOneSpecificMultiSourceDTOFile(elements, currentElement);
-        }
-
-    }
-
-    private Set<? extends Element> generateOneSpecificMultiSourceDTOFile(Set<? extends Element> elements, Element element) {
-        Set<? extends Element> sharedSourceElements;
-
-        ToMultiSourceDTO currentDTO = element.getAnnotation(ToMultiSourceDTO.class);
-        sharedSourceElements =
-                elements
-                        .stream()
-                        .filter(currentElement -> {
-                            ToMultiSourceDTO annotation = currentElement.getAnnotation(ToMultiSourceDTO.class);
-                            return currentDTO.identifierName().equals(annotation.identifierName());
-                        }).collect(Collectors.toSet());
-
-        generateSourceFile(sharedSourceElements);
-
-        elements.removeAll(sharedSourceElements);
-
-
-        return elements;
+        // Generate one source file per group
+        groups.values().forEach(group -> generateSourceFile(Set.copyOf(group)));
     }
 
     private void generateSourceFile(Set<? extends Element> sharedSourceElements) {
 
-        Element exampleElement = sharedSourceElements.iterator().next();
-        String fileName =
-                sharedSourceElements
-                        .iterator()
-                        .next()
-                        .getAnnotation(ToMultiSourceDTO.class)
-                        .identifierName();
+        // FIXED: convert to a sorted list for stable iteration
+        List<? extends Element> sortedElements = sharedSourceElements.stream()
+                .sorted(Comparator.comparing(e -> e.getSimpleName().toString()))
+                .toList();
 
+        String fileName = sortedElements.get(0)
+                .getAnnotation(ToMultiSourceDTO.class)
+                .identifierName();
 
-        List<? extends Element> fields = sharedSourceElements.stream()
+        List<? extends Element> fields = sortedElements.stream()
                 .flatMap(element -> element.getEnclosedElements().stream())
                 .filter(e -> e.getKind().isField())
                 .filter(e -> e.getAnnotation(ExcludeFromDTO.class) == null)
                 .toList();
 
-        List<DTOExtraFields> extraFieldsAnnotations = sharedSourceElements.stream()
+        List<DTOExtraFields> extraFieldsAnnotations = sortedElements.stream()
                 .map(e -> e.getAnnotation(DTOExtraFields.class))
                 .filter(Objects::nonNull)
                 .toList();
@@ -90,7 +70,6 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
                     "@ToMultiSourceDTO classes must have at least one eligible field.");
             return;
         }
-
 
         try (PrintWriter writer = new PrintWriter(processingEnv.getFiler().createSourceFile(fileName).openWriter())) {
 
@@ -125,26 +104,46 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
                 String type = extra.type();
                 String defaultValue = extra.defaultValue();
 
-                writer.printf("""
-                                 private %s %s = %s;
-                                
-                                 public %s get%s() {
-                                   return this.%s;
-                                 }
-                                
-                                 public void set%s(%s %s) {
-                                    this.%s = %s;
-                                 }
-                                
-                                """,
-                        type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
-                        type, capitalize(name), name,
-                        capitalize(name), type, name, name, name
-                );
+                if (!Objects.equals(type, "String")) {
+                    writer.printf("""
+                                     private %s %s = %s;
+                                    
+                                     public %s get%s() {
+                                       return this.%s;
+                                     }
+                                    
+                                     public void set%s(%s %s) {
+                                        this.%s = %s;
+                                     }
+                                    
+                                    """,
+                            type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
+                            type, capitalize(name), name,
+                            capitalize(name), type, name, name, name
+                    );
+                } else {
+
+                    writer.printf("""
+                                     private %s %s = "%s";
+                                    
+                                     public %s get%s() {
+                                       return this.%s;
+                                     }
+                                    
+                                     public void set%s(%s %s) {
+                                        this.%s = %s;
+                                     }
+                                    
+                                    """,
+                            type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
+                            type, capitalize(name), name,
+                            capitalize(name), type, name, name, name
+                    );
+                }
             }
             writer.println("}");
 
-            generateDTOMapper(sharedSourceElements, fileName);
+            generateDTOMapper(sortedElements, fileName);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -152,7 +151,7 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
 
     }
 
-    private void generateDTOMapper(Set<? extends Element> elements, String dtoClassName) {
+    private void generateDTOMapper(List<? extends Element> elements, String dtoClassName) {
 
         String fileName = dtoClassName + "Mapper";
 
@@ -172,9 +171,9 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
             writer.println("import java.util.List;");
             writer.println("import java.util.ArrayList;");
             writer.println("import %s.%s;".formatted(generatedPackageName, dtoClassName));
-            elements.forEach(element -> {
-                writer.println("import %s;".formatted(element.asType().toString()));
-            });
+
+            // FIXED: deterministic import order
+            elements.forEach(element -> writer.println("import %s;".formatted(element.asType().toString())));
             writer.println();
 
             // Class declaration
@@ -182,11 +181,17 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
 
             // Method signature
             writer.print("    public static %s mapTo%s(".formatted(dtoClassName, dtoClassName));
-            elements.forEach(element -> {
-                String SourceClassName = element.getSimpleName().toString();
-                writer.print("%s %s".formatted(SourceClassName, SourceClassName.toLowerCase()));
 
-            });
+            // FIXED: deterministic parameter order
+            String result = elements.stream()
+                    .map(e -> {
+                        String name = e.getSimpleName().toString();
+                        return "%s %s".formatted(name, name.toLowerCase());
+                    })
+                    .collect(Collectors.joining(", "));
+
+            writer.print(result);
+
             writer.printf(") {%n");
             writer.printf("        %s dto = new %s();%n%n", dtoClassName, dtoClassName);
             if (!fieldInfos.isEmpty()) {
@@ -208,7 +213,7 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
 
                     writer.printf("            Field %sfield = %s.class.getDeclaredField(\"%s\");%n", fieldName, oldClassName, fieldName);
                     writer.printf("            %sfield.setAccessible(true);%n", fieldName);
-                    writer.printf("            Object %sValue = %sfield.get(%s);%n%n", fieldName, fieldName, oldClassName);
+                    writer.printf("            Object %sValue = %sfield.get(%s);%n%n", fieldName, fieldName, oldClassName.toLowerCase());
 
                     writer.printf("            Field %sDTO = %s.class.getDeclaredField(\"%s\");%n", fieldNameDTO, dtoClassName, fieldNameDTO);
                     writer.printf("            %sDTO.setAccessible(true);%n", fieldNameDTO);
@@ -219,12 +224,13 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
                 writer.println("        } catch (NoSuchFieldException | IllegalAccessException e) {");
                 writer.print("            throw new RuntimeException(\"cant access fields from");
                 elements.forEach(element -> writer.print("%s, ".formatted(element.getSimpleName().toString())));
-                writer.println("+ e\");");
+                writer.println("\"+ e);");
                 writer.println("        }");
             }
             writer.println();
             writer.println("        return dto;");
             writer.println("    }\n");
+            writer.println("        }\n");
 
         } catch (IOException e) {
             throw new RuntimeException("Error creating new Java File for " + fileName + ": " + e);
@@ -255,6 +261,3 @@ public class MultiSourceDTOProcessor extends AbstractProcessor {
     }
 
 }
-
-
-

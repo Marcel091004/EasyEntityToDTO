@@ -11,6 +11,7 @@ import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 
@@ -95,22 +96,42 @@ public class DTOProcessor extends AbstractProcessor {
                 String type = extra.type();
                 String defaultValue = extra.defaultValue();
 
-                writer.printf("""
-                                 private %s %s = %s;
-                                
-                                 public %s get%s() {
-                                   return this.%s;
-                                 }
-                                
-                                 public void set%s(%s %s) {
-                                    this.%s = %s;
-                                 }
-                                
-                                """,
-                        type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
-                        type, capitalize(name), name,
-                        capitalize(name), type, name, name, name
-                );
+                if (!Objects.equals(type, "String")) {
+                    writer.printf("""
+                                     private %s %s = %s;
+                                    
+                                     public %s get%s() {
+                                       return this.%s;
+                                     }
+                                    
+                                     public void set%s(%s %s) {
+                                        this.%s = %s;
+                                     }
+                                    
+                                    """,
+                            type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
+                            type, capitalize(name), name,
+                            capitalize(name), type, name, name, name
+                    );
+                } else {
+
+                    writer.printf("""
+                                     private %s %s = "%s";
+                                    
+                                     public %s get%s() {
+                                       return this.%s;
+                                     }
+                                    
+                                     public void set%s(%s %s) {
+                                        this.%s = %s;
+                                     }
+                                    
+                                    """,
+                            type, name, defaultValue.isEmpty() ? getDefaultValueForType(type) : defaultValue,
+                            type, capitalize(name), name,
+                            capitalize(name), type, name, name, name
+                    );
+                }
             }
             writer.println("}");
 

@@ -13,45 +13,24 @@
     </modules>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
         <maven.compiler.release>21</maven.compiler.release>
     </properties>
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.11.0</version>
-                    <configuration>
-                        <generatedSourcesDirectory>
-                            ${project.build.directory}/generated-sources/annotations
-                        </generatedSourcesDirectory>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.5.0</version>
-                    <executions>
-                        <execution>
-                            <id>add-generated-sources</id>
-                            <phase>generate-sources</phase>
-                            <goals>
-                                <goal>add-source</goal>
-                            </goals>
-                            <configuration>
-                                <sources>
-                                    <source>${project.build.directory}/generated-sources/annotations</source>
-                                </sources>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <release>21</release>
+                    <generatedSourcesDirectory>
+                        ${project.build.directory}/generated-sources/annotations
+                    </generatedSourcesDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
+
 
 </project>
 

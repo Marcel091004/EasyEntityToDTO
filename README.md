@@ -17,7 +17,7 @@ Using [JitPack](https://jitpack.io):
 <dependency>
 <groupId>com.github.Marcel091004</groupId>
 <artifactId>EasyEntityToDTO</artifactId>
-<version>V1.2.0</version>
+<version>v1.2.0</version>
 </dependency>
 ```
 

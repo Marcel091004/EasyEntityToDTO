@@ -7,7 +7,6 @@
     </parent>
 
     <artifactId>entity-to-dto-core</artifactId>
-    <version>1.2-SNAPSHOT</version>
 
     <dependencies>
         <dependency>

@@ -25,7 +25,6 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.11.0</version>
                     <configuration>
-                        <release>${maven.compiler.release}</release>
                         <generatedSourcesDirectory>
                             ${project.build.directory}/generated-sources/annotations
                         </generatedSourcesDirectory>
